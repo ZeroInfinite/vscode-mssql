@@ -8,6 +8,8 @@ import UntitledSqlDocumentService from '../src/controllers/untitledSqlDocumentSe
 import * as Extension from '../src/extension';
 import Constants = require('../src/constants/constants');
 import LocalizedConstants = require('../src/constants/localizedConstants');
+import VscodeWrapper from '../src/controllers/vscodeWrapper';
+import { TestExtensionContext } from './stubs';
 import assert = require('assert');
 
 suite('MainController Tests', () => {
@@ -89,7 +91,6 @@ suite('MainController Tests', () => {
         }
     });
 
-
     // Renamed file event test
     test('onDidCloseTextDocument should call renamedDoc function when rename occurs' , done => {
         // A renamed doc constitutes an openDoc event directly followed by a closeDoc event
@@ -111,14 +112,17 @@ suite('MainController Tests', () => {
     // Saved Untitled file event test
     test('onDidCloseTextDocument should call untitledDoc function when an untitled file is saved' , done => {
         // Scheme of older doc must be untitled
-        document.uri.scheme = LocalizedConstants.untitledScheme;
+        let document2 = <vscode.TextDocument> {
+            uri : vscode.Uri.parse(`${LocalizedConstants.untitledScheme}:${docUri}`),
+            languageId : 'sql'
+        };
 
         // A save untitled doc constitutes an saveDoc event directly followed by a closeDoc event
         mainController.onDidSaveTextDocument(newDocument);
-        mainController.onDidCloseTextDocument(document);
+        mainController.onDidCloseTextDocument(document2);
         try {
             connectionManager.verify(x => x.transferFileConnection(TypeMoq.It.isAny(), TypeMoq.It.isAny()), TypeMoq.Times.once());
-            assert.equal(docUriCallback, document.uri.toString());
+            assert.equal(docUriCallback, document2.uri.toString());
             assert.equal(newDocUriCallback, newDocument.uri.toString());
             done();
         } catch (err) {
@@ -177,6 +181,20 @@ suite('MainController Tests', () => {
         } catch (err) {
             done(new Error(err));
         }
+    });
+
+    test('TextDocument Events should handle non-initialized connection manager' , done => {
+        let contextMock: TypeMoq.Mock<vscode.ExtensionContext> = TypeMoq.Mock.ofType(TestExtensionContext);
+        let vscodeWrapperMock: TypeMoq.Mock<VscodeWrapper> = TypeMoq.Mock.ofType(VscodeWrapper);
+        let controller: MainController = new MainController(contextMock.object,
+            undefined,  // ConnectionManager
+            vscodeWrapperMock.object);
+
+        // None of the TextDocument events should throw exceptions, they should cleanly exit instead.
+        controller.onDidOpenTextDocument(document);
+        controller.onDidSaveTextDocument(document);
+        controller.onDidCloseTextDocument(document);
+        done();
     });
 
     test('onNewQuery should call the new query and new connection' , () => {

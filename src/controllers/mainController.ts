@@ -138,6 +138,9 @@ export default class MainController implements vscode.Disposable {
 
         // initialize language service client
         return new Promise<boolean>( (resolve, reject) => {
+                // Initialize telemetry
+                Telemetry.initialize(self._context);
+
                 SqlToolsServerClient.instance.initialize(self._context).then(serverResult => {
 
                 // Init status bar
@@ -154,8 +157,7 @@ export default class MainController implements vscode.Disposable {
                 // Init connection manager and connection MRU
                 self._connectionMgr = new ConnectionManager(self._context, self._statusview, self._prompter);
 
-                // Initialize telemetry
-                Telemetry.initialize(self._context);
+
 
                 activationTimer.end();
 
@@ -196,6 +198,7 @@ export default class MainController implements vscode.Disposable {
         if (this.CanRunCommand()) {
             return this._connectionMgr.onChooseDatabase();
         }
+        return Promise.resolve(false);
     }
 
     /**
@@ -210,6 +213,7 @@ export default class MainController implements vscode.Disposable {
             }
             return this._connectionMgr.onDisconnect();
         }
+        return Promise.resolve(false);
     }
 
     /**
@@ -220,6 +224,7 @@ export default class MainController implements vscode.Disposable {
             Telemetry.sendTelemetryEvent('ManageProfiles');
             return this._connectionMgr.onManageProfiles();
         }
+        return Promise.resolve(false);
     }
 
     /**
@@ -229,6 +234,7 @@ export default class MainController implements vscode.Disposable {
         if (this.CanRunCommand()) {
             return this._connectionMgr.onNewConnection();
         }
+        return Promise.resolve(false);
     }
 
     /**
@@ -369,17 +375,7 @@ export default class MainController implements vscode.Disposable {
      * Shows the release notes page in the preview browser
      */
     private launchReleaseNotesPage(): void {
-        // get the URI for the release notes page
-        let docUri = vscode.Uri.file(
-            this._context.asAbsolutePath(
-                'out/src/views/htmlcontent/dist/docs/index.html'));
-
-        // show the release notes page in the preview window
-        vscode.commands.executeCommand(
-            'vscode.previewHtml',
-            docUri,
-            vscode.ViewColumn.One,
-            'mssql for VS Code Release Notes');
+        opener(Constants.changelogLink);
     }
 
      /**
@@ -393,9 +389,12 @@ export default class MainController implements vscode.Disposable {
      * Opens a new query and creates new connection
      */
     public onNewQuery(): Promise<boolean> {
-        return this._untitledSqlDocumentService.newQuery().then(x => {
-            return this._connectionMgr.onNewConnection();
-        });
+        if (this.CanRunCommand()) {
+            return this._untitledSqlDocumentService.newQuery().then(x => {
+                return this._connectionMgr.onNewConnection();
+            });
+        }
+        return Promise.resolve(false);
     }
 
     /**
@@ -428,6 +427,10 @@ export default class MainController implements vscode.Disposable {
      * @param doc The document that was closed
      */
     public onDidCloseTextDocument(doc: vscode.TextDocument): void {
+        if (this._connectionMgr === undefined) {
+            // Avoid processing events before initialization is complete
+            return;
+        }
         let closedDocumentUri: string = doc.uri.toString();
         let closedDocumentUriScheme: string = doc.uri.scheme;
 
@@ -475,6 +478,10 @@ export default class MainController implements vscode.Disposable {
      * to enable features of our extension for the document.
      */
     public onDidOpenTextDocument(doc: vscode.TextDocument): void {
+        if (this._connectionMgr === undefined) {
+            // Avoid processing events before initialization is complete
+            return;
+        }
         this._connectionMgr.onDidOpenTextDocument(doc);
 
         // Setup properties incase of rename
@@ -489,6 +496,11 @@ export default class MainController implements vscode.Disposable {
      * @param doc The document that was saved
      */
     public onDidSaveTextDocument(doc: vscode.TextDocument): void {
+        if (this._connectionMgr === undefined) {
+            // Avoid processing events before initialization is complete
+            return;
+        }
+
         let savedDocumentUri: string = doc.uri.toString();
 
         // Keep track of which file was last saved and when for detecting the case when we save an untitled document to disk

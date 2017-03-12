@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/Microsoft/vscode-mssql/blob/master/README.md",
   "engines": {
-    "vscode": "^1.4.0"
+    "vscode": "^1.9.0"
   },
   "categories": [
     "Languages"
@@ -61,6 +61,7 @@
     "gulp-install": "^0.6.0",
     "gulp-istanbul-report": "0.0.1",
     "gulp-json-editor": "^2.2.1",
+    "gulp-remote-src": "0.4.1",
     "gulp-rename": "^1.2.2",
     "gulp-shell": "^0.5.2",
     "gulp-sourcemaps": "^1.6.0",
@@ -84,7 +85,7 @@
     "typemoq": "^0.3.2",
     "typescript": "^2.1.5",
     "uglify-js": "mishoo/UglifyJS2#harmony",
-    "vscode": "^0.11.0",
+    "vscode": "^1.0.5",
     "vscode-nls-dev": "https://github.com/Raymondd/vscode-nls-dev/releases/download/2.0.2/build.tar.gz",
     "xmldom": "^0.1.27",
     "yargs": "https://registry.npmjs.org/yargs/-/yargs-3.32.0.tgz"
@@ -188,12 +189,12 @@
       },
       {
         "command": "extension.newQuery",
-        "title": "New query",
+        "title": "New Query",
         "category": "MS SQL"
       },
       {
         "command": "extension.rebuildIntelliSenseCache",
-        "title": "Clear IntelliSense Cache",
+        "title": "Refresh IntelliSense Cache",
         "category": "MS SQL"
       }
     ],
@@ -433,14 +434,10 @@
           "description": "Set the font size for the results grid; set to blank to use the editor size",
           "default": 13
         },
-        "mssql.saveAsCsv": {
-          "type": "object",
-          "description": "[Optional] Configuration options for saving results as CSV",
-          "includeHeaders": {
-            "type": "boolean",
-            "default": true,
-            "description": "[Optional] When true, column headers are included in CSV"
-          }
+        "mssql.saveAsCsv.includeHeaders": {
+          "type": "boolean",
+          "description": "[Optional] When true, column headers are included when saving results as CSV",
+          "default": true
         },
         "mssql.copyIncludeHeaders": {
           "type": "boolean",
@@ -501,6 +498,11 @@
           "type": "boolean",
           "description": "[Optional] Configuration options for localizing into VSCode's configured locale (must restart VSCode for settings to take effect)",
           "default": false
+        },
+        "mssql.query.displayBitAsNumber": {
+          "type": "boolean",
+          "default": true,
+          "description": "Should BIT columns be displayed as numbers (1 or 0)? If false, BIT columns will be displayed as 'true' or 'false'"
         }
       }
     }
